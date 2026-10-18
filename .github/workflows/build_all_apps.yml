@@ -1,1 +1,61 @@
+name: Build All VA System Apps
 
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-all:
+    name: Build ${{ matrix.app-name }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          - app-dir: va-style-launcher
+            app-name: "VA Style Launcher"
+          - app-dir: va-sky-launcher
+            app-name: "VA Sky Launcher"
+          - app-dir: va-smart-keyboard
+            app-name: "VA Smart Keyboard"
+          - app-dir: apk-installer
+            app-name: "APK Installer"
+          - app-dir: system-settings
+            app-name: "System Settings"
+          - app-dir: smart-file-manager
+            app-name: "Smart File Manager"
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v2
+
+    - name: Accept Android SDK licenses
+      run: yes | sdkmanager --licenses || true
+
+    - name: Grant execute permission for gradlew
+      run: |
+        cd ${{ matrix.app-dir }}
+        chmod +x gradlew
+
+    - name: Build Debug APK for ${{ matrix.app-name }}
+      run: |
+        cd ${{ matrix.app-dir }}
+        ./gradlew assembleDebug
+
+    - name: Upload APK Artifact for ${{ matrix.app-name }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ matrix.app-dir }}-apk
+        path: ${{ matrix.app-dir }}/app/build/outputs/apk/debug/app-debug.apk
+        
